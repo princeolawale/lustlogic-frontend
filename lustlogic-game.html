@@ -2118,178 +2118,51 @@ You're nearly impossible to satisfy. Keep responses under 50 words.`;
             StorageManager.saveChatHistory(gameState.conversationHistory);
         }
 
-        async function getAIResponse() {
-            elements.typingIndicator.classList.add('active');
-            elements.sendButton.disabled = true;
-            elements.chatInput.disabled = true;
 
-            try {
-                gameState.messageCount++;
+async function getAIResponse() {
+    elements.typingIndicator.classList.add('active');
+    elements.sendButton.disabled = true;
+    elements.chatInput.disabled = true;
 
-                let additionalInstruction = '';
-                if (Math.random() < CONFIG.CHALLENGE_CHANCE && 
-                    gameState.messageCount - gameState.lastChallengeAt > 3) {
-                    
-                    additionalInstruction = '\n\nSPECIAL: Be extra critical this time. Their response just reminded you of something annoying. Drop your standards even more.';
-                    gameState.lastChallengeAt = gameState.messageCount;
-                }
+    try {
+        const userMessage = gameState.conversationHistory
+            .filter(m => m.role === "user")
+            .slice(-1)[0]?.content || "";
 
-                const response = await fetch('https://api.openai.com/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${CONFIG.OPENAI_API_KEY}`
-                    },
-                    body: JSON.stringify({
-                        model: 'gpt-4',
-                        messages: [
-                            {
-                                role: 'system',
-                                content: KAIRA_PROMPT + `\n\nCRITICAL SCORING RULES:
-- Rate their message from -25 to +8
-- Most messages should be negative (-10 to -25)
-- Only EXCEPTIONAL messages get positive scores (+3 to +8)
-- Be harsh and critical - your standards are nearly impossible
-- Format: SCORE: [number]` + additionalInstruction
-                            },
-                            ...gameState.conversationHistory
-                        ],
-                        max_tokens: 150,
-                        temperature: 0.9
-                    })
-                });
-
-                const data = await response.json();
-                const aiMessage = data.choices[0].message.content;
-
-                const scoreMatch = aiMessage.match(/SCORE:\s*([+-]?\d+)/);
-                let score = 0;
-                let cleanMessage = aiMessage;
-
-                if (scoreMatch) {
-                    score = parseInt(scoreMatch[1]);
-                    cleanMessage = aiMessage.replace(/SCORE:\s*[+-]?\d+/, '').trim();
-                }
-
-                updateAffection(score);
-                await sendAIMessage(cleanMessage);
-
-            } catch (error) {
-                console.error('Error:', error);
-                await sendAIMessage("Neural link interrupted... Reconnecting...");
-            } finally {
-                elements.typingIndicator.classList.remove('active');
-                elements.sendButton.disabled = false;
-                elements.chatInput.disabled = false;
-                elements.chatInput.focus();
-            }
-        }
-
-        // =====================================================
-        // LOGOUT SYSTEM
-        // =====================================================
-        elements.logoutButton.addEventListener('click', () => {
-            if (confirm('Disconnect from neural link? Your progress will be saved.')) {
-                logout();
-            }
+        const response = await fetch("https://lustlogic-backend.onrender.com/chat", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                message: userMessage,
+                history: gameState.conversationHistory
+            })
         });
 
-        function logout() {
-            gameState.isGameActive = false;
-            StorageManager.saveGameState(gameState);
-            window.location.href = 'index.html';
+        const data = await response.json();
+
+        let aiMessage = data.reply || "…";
+
+        const scoreMatch = aiMessage.match(/SCORE:\s*([+-]?\d+)/);
+        let score = 0;
+
+        if (scoreMatch) {
+            score = parseInt(scoreMatch[1]);
+            aiMessage = aiMessage.replace(/SCORE:\s*[+-]?\d+/, "").trim();
         }
 
-        // =====================================================
-        // GAME OVER & COOLDOWN
-        // =====================================================
-        function endGame(won) {
-            gameState.isGameActive = false;
-            elements.chatInput.disabled = true;
-            elements.sendButton.disabled = true;
+        updateAffection(score);
+        await sendAIMessage(aiMessage);
 
-            // Update stats
-            const stats = StorageManager.loadStats();
-            if (won) stats.wins++;
-            if (gameState.affection > stats.bestScore) {
-                stats.bestScore = gameState.affection;
-            }
-            stats.totalPlayTime += (Date.now() - gameState.startTime) / 1000;
-            StorageManager.saveStats(stats);
+    } catch (error) {
+        console.error("Backend error:", error);
+        await sendAIMessage("Connection unstable… try again.");
+    } finally {
+        elements.typingIndicator.classList.remove('active');
+        elements.sendButton.disabled = false;
+        elements.chatInput.disabled = false;
+        elements.chatInput.focus();
+    }
+}
 
-            elements.gameOver.classList.add('active');
-            
-            if (won) {
-                elements.gameOverTitle.textContent = 'IMPOSSIBLE!';
-                elements.gameOverTitle.classList.add('success');
-                elements.gameOverMessage.textContent = `UNBELIEVABLE, ${gameState.username}! You achieved full neural synchronization! You won 6.66 SOL! You're one of the few who actually pulled it off!`;
-                elements.cooldownContainer.style.display = 'none';
-                elements.retryButton.disabled = false;
-            } else {
-                elements.gameOverTitle.textContent = "LINK FAILED";
-                elements.gameOverTitle.classList.add('failure');
-                
-                let message = '';
-                const finalScore = Math.round(gameState.affection);
-                if (finalScore >= 80) {
-                    message = `You were so close, ${gameState.username}... ${finalScore}% is impressive, but not enough. I need absolute certainty. Try again in 2 minutes.`;
-                } else if (finalScore >= 50) {
-                    message = `${finalScore}%... Not bad, ${gameState.username}, but I expected more. The neural link demands more. Wait 2 minutes before trying again.`;
-                } else if (finalScore >= 25) {
-                    message = `Sorry, ${gameState.username}, but ${finalScore}% is way too low. You couldn't establish a stable link. System locked for 2 minutes.`;
-                } else {
-                    message = `Seriously? ${finalScore}%? ${gameState.username}, you weren't even close. That was disappointing. Cooldown: 2 minutes.`;
-                }
-                
-                elements.gameOverMessage.textContent = message;
-                
-                // Start cooldown
-                const cooldownEnd = Date.now() + (CONFIG.COOLDOWN_DURATION * 1000);
-                StorageManager.saveCooldown(cooldownEnd);
-                startCooldownTimer(cooldownEnd);
-            }
-        }
-
-        function startCooldownTimer(endTime) {
-            elements.cooldownContainer.classList.add('active');
-            elements.retryButton.disabled = true;
-
-            const cooldownInterval = setInterval(() => {
-                const remaining = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
-                
-                const minutes = Math.floor(remaining / 60);
-                const seconds = remaining % 60;
-                elements.cooldownTimer.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-
-                if (remaining <= 0) {
-                    clearInterval(cooldownInterval);
-                    StorageManager.clearCooldown();
-                    elements.cooldownContainer.classList.remove('active');
-                    elements.retryButton.disabled = false;
-                }
-            }, 100);
-        }
-
-        function showCooldownScreen(endTime) {
-            elements.gameOver.classList.add('active');
-            elements.gameOverTitle.textContent = "SYSTEM LOCKED";
-            elements.gameOverTitle.classList.add('failure');
-            elements.gameOverMessage.textContent = "Previous attempt failed. System requires time to reboot. Wait for cooldown to end.";
-            startCooldownTimer(endTime);
-        }
-
-        elements.retryButton.addEventListener('click', () => {
-            location.reload();
-        });
-
-        elements.backButton.addEventListener('click', () => {
-            window.location.href = 'index.html';
-        });
-
-        // =====================================================
-        // START
-        // =====================================================
-        init();
-    </script>
-</body>
-</html>
