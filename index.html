@@ -232,7 +232,7 @@
         
         <div class="login-container">
             
-            <button class="login-btn wallet-login" onclick="handleWalletLogin()">
+            <button class="login-btn wallet-login" >
                 <span>Connect Phantom</span>
             </button>
         </div>
@@ -247,13 +247,6 @@
         // Login handlers
 
 <script>
-async function handleWalletLogin() {
-    try {
-        if (!window.solana || !window.solana.isPhantom) {
-            alert("Phantom wallet not detected. Install from phantom.app");
-            window.open("https://phantom.app/", "_blank");
-            return;
-        }
 
         const response = await window.solana.connect();
         const publicKey = response.publicKey.toString();
@@ -267,5 +260,51 @@ async function handleWalletLogin() {
         alert("Failed to connect Phantom.");
     }
 }
+</script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const walletBtn = document.querySelector(".wallet-login");
+
+    if (!walletBtn) {
+        console.log("Wallet button not found");
+        return;
+    }
+
+    walletBtn.addEventListener("click", async function () {
+
+        console.log("Wallet button clicked");
+
+        if (!window.solana) {
+            alert("Phantom not installed. Install from phantom.app");
+            window.open("https://phantom.app/", "_blank");
+            return;
+        }
+
+        if (!window.solana.isPhantom) {
+            alert("Phantom detected but not active.");
+            return;
+        }
+
+        try {
+            const response = await window.solana.connect();
+            const publicKey = response.publicKey.toString();
+
+            console.log("Connected:", publicKey);
+
+            localStorage.setItem("lustlogic_wallet", publicKey);
+
+            window.location.href = "lustlogic-game.html";
+
+        } catch (err) {
+            console.error("Connection error:", err);
+            alert("Wallet connection failed.");
+        }
+
+    });
+
+});
 </script>
 
