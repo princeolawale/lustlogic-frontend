@@ -245,3 +245,27 @@
 
     <script>
         // Login handlers
+
+<script>
+async function handleWalletLogin() {
+    try {
+        if (!window.solana || !window.solana.isPhantom) {
+            alert("Phantom wallet not detected. Install from phantom.app");
+            window.open("https://phantom.app/", "_blank");
+            return;
+        }
+
+        const response = await window.solana.connect();
+        const publicKey = response.publicKey.toString();
+
+        localStorage.setItem("lustlogic_wallet", publicKey);
+
+        window.location.href = "lustlogic-game.html";
+
+    } catch (err) {
+        console.error("Wallet connection error:", err);
+        alert("Failed to connect Phantom.");
+    }
+}
+</script>
+
