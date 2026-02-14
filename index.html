@@ -161,33 +161,6 @@
             z-index: 1;
         }
 
-        .email-login {
-            background: linear-gradient(135deg, #ff1461 0%, #c9184a 100%);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .email-login:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 12px 48px rgba(255, 20, 97, 0.5);
-            border-color: rgba(255, 255, 255, 0.3);
-        }
-
-        .wallet-login {
-            background: rgba(255, 255, 255, 0.05);
-            color: #ff6b9d;
-            border: 2px solid #ff1461;
-            backdrop-filter: blur(30px);
-        }
-
-        .wallet-login:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 12px 48px rgba(255, 107, 157, 0.4);
-            background: rgba(255, 255, 255, 0.08);
-            border-color: #ff6b9d;
-        }
-
-        .divider {
             color: rgba(255, 255, 255, 0.5);
             font-size: 14px;
             letter-spacing: 4px;
@@ -258,11 +231,6 @@
         </div>
         
         <div class="login-container">
-            <button class="login-btn email-login" onclick="handleEmailLogin()">
-                <span>Login with Email</span>
-            </button>
-            
-            <div class="divider">OR</div>
             
             <button class="login-btn wallet-login" onclick="handleWalletLogin()">
                 <span>Connect Phantom</span>
@@ -277,38 +245,3 @@
 
     <script>
         // Login handlers
-        function handleEmailLogin() {
-            window.location.href = 'lustlogic-game.html';
-        }
-
-        async function handleWalletLogin() {
-            try {
-                const isPhantomInstalled = window.solana && window.solana.isPhantom;
-                
-                if (!isPhantomInstalled) {
-                    alert('Phantom wallet not detected.\n\nPlease install Phantom wallet from phantom.app');
-                    window.open('https://phantom.app/', '_blank');
-                    return;
-                }
-
-                const resp = await window.solana.connect();
-                const publicKey = resp.publicKey.toString();
-                
-                localStorage.setItem('lustlogic_wallet', publicKey);
-                window.location.href = 'lustlogic-game.html';
-                
-            } catch (err) {
-                console.error('Phantom connection error:', err);
-                alert('Failed to connect Phantom wallet. Please try again.');
-            }
-        }
-
-        // Add keyboard interactions
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                handleEmailLogin();
-            }
-        });
-    </script>
-</body>
-</html>
