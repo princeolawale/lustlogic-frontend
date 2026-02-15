@@ -252,6 +252,49 @@
 .x-link { text-decoration:none; font-size:14px; letter-spacing:3px; color:#1DA1F2; transition:0.3s; }
 .x-link:hover { opacity:0.7; }
 
+.bottom-section {
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+    align-items: center;
+}
+.ca-box {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 28px;
+    border: 1px solid rgba(255,20,97,0.6);
+    background: rgba(255,20,97,0.08);
+    font-size: 16px;
+    letter-spacing: 3px;
+    color: #ff6b9d;
+}
+.copy-icon {
+    cursor: pointer;
+    font-size: 18px;
+    transition: 0.2s ease;
+}
+.copy-icon:hover {
+    transform: scale(1.2);
+}
+.x-btn {
+    padding: 18px 50px;
+    font-size: 18px;
+    letter-spacing: 4px;
+    text-decoration: none;
+    background: #1DA1F2;
+    color: white;
+    font-weight: bold;
+    transition: 0.3s ease;
+}
+.x-btn:hover {
+    opacity: 0.8;
+}
+
     </style>
 </head>
 <body>
@@ -320,6 +363,28 @@ document.addEventListener("DOMContentLoaded", function(){
       navigator.clipboard.writeText(text);
       this.innerText = "COPIED";
       setTimeout(() => this.innerText = "COPY", 1500);
+    });
+  }
+});
+</script>
+
+<div class="bottom-section">
+    <div class="ca-box">
+        <span class="copy-icon" id="copyIcon">📋</span>
+        <span id="tokenCA">COMING SOON</span>
+    </div>
+    <a href="https://x.com/youractualhandle" target="_blank" class="x-btn">FOLLOW ON X</a>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+  const copyIcon = document.getElementById("copyIcon");
+  if(copyIcon){
+    copyIcon.addEventListener("click", function(){
+      const text = document.getElementById("tokenCA").innerText;
+      navigator.clipboard.writeText(text);
+      copyIcon.innerText = "✔";
+      setTimeout(()=> copyIcon.innerText="📋",1500);
     });
   }
 });
