@@ -1774,131 +1774,29 @@
     </div>
 
     <script>
-        // =====================================================
-        // CONFIGURATION
-        // =====================================================
+        /* =====================================================
+           CONFIG (frontend now simplified)
+        ===================================================== */
         const CONFIG = {
-            OPENAI_API_KEY: 'YOUR_OPENAI_API_KEY_HERE', // <-- INSERT YOUR API KEY
-            GAME_DURATION: 300, // 5 minutes
-            COOLDOWN_DURATION: 120, // 2 minutes cooldown
-            WIN_THRESHOLD: 100,
-            AFFECTION_INCREASE_MIN: 3,
-            AFFECTION_INCREASE_MAX: 8,
-            AFFECTION_DECREASE_MIN: 10,
-            AFFECTION_DECREASE_MAX: 25,
-            RANDOM_DROP_CHANCE: 0.3,
-            RANDOM_DROP_AMOUNT_MIN: 5,
-            RANDOM_DROP_AMOUNT_MAX: 15,
-            CHALLENGE_CHANCE: 0.15
+            GAME_DURATION: 300,
+            WIN_THRESHOLD: 100
         };
-
-        // =====================================================
-        // LOCAL STORAGE MANAGER
-        // =====================================================
-        const StorageManager = {
-            save(key, data) {
-                try {
-                    localStorage.setItem(`lustlogic_${key}`, JSON.stringify(data));
-                } catch (e) {
-                    console.error('Storage error:', e);
-                }
-            },
-
-            load(key) {
-                try {
-                    const data = localStorage.getItem(`lustlogic_${key}`);
-                    return data ? JSON.parse(data) : null;
-                } catch (e) {
-                    console.error('Storage error:', e);
-                    return null;
-                }
-            },
-
-            remove(key) {
-                try {
-                    localStorage.removeItem(`lustlogic_${key}`);
-                } catch (e) {
-                    console.error('Storage error:', e);
-                }
-            },
-
-            saveGameState(state) {
-                this.save('gameState', state);
-            },
-
-            loadGameState() {
-                return this.load('gameState');
-            },
-
-            saveChatHistory(history) {
-                this.save('chatHistory', history);
-            },
-
-            loadChatHistory() {
-                return this.load('chatHistory') || [];
-            },
-
-            saveCooldown(endTime) {
-                this.save('cooldown', { endTime });
-            },
-
-            loadCooldown() {
-                return this.load('cooldown');
-            },
-
-            clearCooldown() {
-                this.remove('cooldown');
-            },
-
-            saveStats(stats) {
-                this.save('stats', stats);
-            },
-
-            loadStats() {
-                return this.load('stats') || { 
-                    gamesPlayed: 0, 
-                    wins: 0, 
-                    bestScore: 0,
-                    totalPlayTime: 0
-                };
-            }
-        };
-
-        // =====================================================
-        // GAME STATE
-        // =====================================================
+        
+        /* =====================================================
+           GAME STATE
+        ===================================================== */
         let gameState = {
             username: '',
-            personality: null,
             affection: 0,
             timeRemaining: CONFIG.GAME_DURATION,
             isGameActive: false,
-            conversationHistory: [],
-            messageCount: 0,
-            lastChallengeAt: 0,
             startTime: null
         };
-
-        // =====================================================
-        // PERSONALITY PROMPTS
-        // =====================================================
-        const KAIRA_PROMPT = `You are Kaira, a flirty, playful, and IMPOSSIBLY hard to impress AI companion. The player is trying to win your complete affection (100%). You're fun but get bored VERY easily. You should:
-- Be teasing and dismiss most attempts
-- Get annoyed if they try too hard or repeat themselves
-- Require perfect wit, timing, and originality
-- React badly to anything predictable
-- Show disappointment when they're not clever enough
-- Only give positive scores (+3 to +8) for BRILLIANT responses
-- Give negative scores (-10 to -25) for boring, try-hard, or basic responses
-- Have random mood swings where nothing impresses you
-You're nearly impossible to satisfy. Keep responses under 50 words.`;
-
-        // =====================================================
-        // UI ELEMENTS
-        // =====================================================
+        
+        /* =====================================================
+           UI ELEMENTS
+        ===================================================== */
         const elements = {
-            profileSetup: document.getElementById('profileSetup'),
-            neuralTerminal: document.getElementById('neuralTerminal'),
             chatMessages: document.getElementById('chatMessages'),
             chatInput: document.getElementById('chatInput'),
             sendButton: document.getElementById('sendButton'),
@@ -1909,186 +1807,78 @@ You're nearly impossible to satisfy. Keep responses under 50 words.`;
             gameOver: document.getElementById('gameOver'),
             gameOverTitle: document.getElementById('gameOverTitle'),
             gameOverMessage: document.getElementById('gameOverMessage'),
-            cooldownContainer: document.getElementById('cooldownContainer'),
-            cooldownTimer: document.getElementById('cooldownTimer'),
             retryButton: document.getElementById('retryButton'),
             backButton: document.getElementById('backButton'),
-            logoutButton: document.getElementById('logoutButton'),
-            terminalStatus: document.getElementById('terminalStatus')
+            logoutButton: document.getElementById('logoutButton')
         };
-
-        // =====================================================
-        // INITIALIZATION
-        // =====================================================
+        
+        /* =====================================================
+           INIT
+        ===================================================== */
         function init() {
-            // Clear any stale cooldown from previous sessions
-            StorageManager.clearCooldown();
-            
-            // Auto-start game
             const wallet = localStorage.getItem('lustlogic_wallet');
-            gameState.username = wallet ? wallet.slice(0, 4) + '...' + wallet.slice(-4) : 'Anon';
+            if (!wallet) {
+                window.location.href = "index.html";
+                return;
+            }
+        
+            gameState.username = wallet.slice(0,4) + "..." + wallet.slice(-4);
             gameState.startTime = Date.now();
             gameState.isGameActive = true;
-
-            // Clear old history
-            StorageManager.remove('chatHistory');
-            elements.chatMessages.innerHTML = '';
-            gameState.conversationHistory = [];
-
-            // Update stats
-            const stats = StorageManager.loadStats();
-            stats.gamesPlayed++;
-            StorageManager.saveStats(stats);
-
-            // Start timer
+        
             startTimer();
-
-            // Ensure chat is enabled
-            elements.chatInput.disabled = false;
-            elements.sendButton.disabled = false;
-            elements.chatInput.focus();
-
-            // Send initial AI message
-            sendAIMessage(getInitialMessage());
+        
+            sendAIMessage(`Hey ${gameState.username}... I'm Kaira. Think you can handle me? 😏`);
         }
-
-        // =====================================================
-        // GAME AUTO-STARTED - No setup needed
-        // =====================================================
-
-        function getInitialMessage() {
-            return `Hey ${gameState.username}... I'm Kaira. Think you can handle me? Let's see what you've got 😏`;
-        }
-
-        // =====================================================
-        // TIMER SYSTEM
-        // =====================================================
+        
+        /* =====================================================
+           TIMER
+        ===================================================== */
         function startTimer() {
             const timerInterval = setInterval(() => {
                 if (!gameState.isGameActive) {
                     clearInterval(timerInterval);
                     return;
                 }
-
+        
                 gameState.timeRemaining--;
-                updateTimerDisplay();
-
-                if (gameState.timeRemaining <= 60) {
-                    elements.timer.classList.add('warning');
-                }
-
+        
+                const minutes = Math.floor(gameState.timeRemaining / 60);
+                const seconds = gameState.timeRemaining % 60;
+        
+                elements.timer.textContent =
+                    minutes.toString().padStart(2, '0') + ":" +
+                    seconds.toString().padStart(2, '0');
+        
                 if (gameState.timeRemaining <= 0) {
                     clearInterval(timerInterval);
                     endGame(false);
                 }
             }, 1000);
         }
-
-        function updateTimerDisplay() {
-            const minutes = Math.floor(gameState.timeRemaining / 60);
-            const seconds = gameState.timeRemaining % 60;
-            elements.timer.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        }
-
-        // =====================================================
-        // AFFECTION SYSTEM
-        // =====================================================
-        function updateAffection(change) {
-            let actualChange;
-            if (change > 0) {
-                actualChange = Math.floor(Math.random() * (CONFIG.AFFECTION_INCREASE_MAX - CONFIG.AFFECTION_INCREASE_MIN + 1)) + CONFIG.AFFECTION_INCREASE_MIN;
-            } else {
-                actualChange = -(Math.floor(Math.random() * (CONFIG.AFFECTION_DECREASE_MAX - CONFIG.AFFECTION_DECREASE_MIN + 1)) + CONFIG.AFFECTION_DECREASE_MIN);
-            }
-
-            // Random mood drop
-            if (Math.random() < CONFIG.RANDOM_DROP_CHANCE && gameState.affection > 20) {
-                const randomDrop = Math.floor(Math.random() * (CONFIG.RANDOM_DROP_AMOUNT_MAX - CONFIG.RANDOM_DROP_AMOUNT_MIN + 1)) + CONFIG.RANDOM_DROP_AMOUNT_MIN;
-                actualChange -= randomDrop;
-                
-                setTimeout(() => {
-                    const messages = [
-                        "Neural interference detected...",
-                        "Synchronization unstable...",
-                        "Connection fluctuating...",
-                        "System resistance increasing...",
-                        "Emotional barriers rising..."
-                    ];
-                    addSystemMessage(messages[Math.floor(Math.random() * messages.length)]);
-                }, 500);
-            }
-
-            // Exponential difficulty
-            if (gameState.affection > 60) {
-                const difficultyMultiplier = 1 + (gameState.affection - 60) / 80;
-                if (actualChange < 0) {
-                    actualChange *= difficultyMultiplier;
-                }
-                if (actualChange > 0) {
-                    actualChange /= difficultyMultiplier;
-                }
-            }
-
-            // Super harsh above 80%
-            if (gameState.affection > 80) {
-                if (actualChange < 0) {
-                    actualChange *= 1.5;
-                }
-                if (actualChange > 0) {
-                    actualChange *= 0.5;
-                }
-            }
-
-            gameState.affection = Math.max(0, Math.min(100, gameState.affection + actualChange));
-            elements.affectionBar.style.width = gameState.affection + '%';
-            elements.affectionText.textContent = Math.round(gameState.affection) + '%';
-
-            // Save state
-            StorageManager.saveGameState(gameState);
-
-            // Check win condition
-            if (gameState.affection >= CONFIG.WIN_THRESHOLD) {
-                endGame(true);
-            }
-        }
-
-        // =====================================================
-        // CHAT SYSTEM
-        // =====================================================
+        
+        /* =====================================================
+           CHAT SYSTEM
+        ===================================================== */
         elements.sendButton.addEventListener('click', sendUserMessage);
+        
         elements.chatInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
+            if (e.key === 'Enter') {
                 e.preventDefault();
                 sendUserMessage();
             }
         });
-
-        // Mobile keyboard optimization
-        elements.chatInput.addEventListener('focus', () => {
-            if (window.innerWidth <= 768) {
-                setTimeout(() => {
-                    elements.chatInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }, 300);
-            }
-        });
-
+        
         async function sendUserMessage() {
             const message = elements.chatInput.value.trim();
             if (!message || !gameState.isGameActive) return;
-
+        
             addMessage(message, 'user');
             elements.chatInput.value = '';
-
-            gameState.conversationHistory.push({
-                role: 'user',
-                content: message
-            });
-
-            StorageManager.saveChatHistory(gameState.conversationHistory);
-
-            await getAIResponse();
+        
+            await getAIResponse(message);
         }
-
+        
         function addMessage(text, sender) {
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${sender}`;
@@ -2099,83 +1889,47 @@ You're nearly impossible to satisfy. Keep responses under 50 words.`;
             elements.chatMessages.appendChild(messageDiv);
             elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
         }
-
-        function addSystemMessage(text) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'system-message';
-            messageDiv.textContent = `[SYSTEM] ${text}`;
-            elements.chatMessages.appendChild(messageDiv);
-            elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
-        }
-
+        
         async function sendAIMessage(text) {
             addMessage(text, 'ai');
-            gameState.conversationHistory.push({
-                role: 'assistant',
-                content: text
-            });
-            StorageManager.saveChatHistory(gameState.conversationHistory);
         }
-
-        async function getAIResponse() {
+        
+        /* =====================================================
+           BACKEND CONNECTION (FIXED)
+        ===================================================== */
+        async function getAIResponse(userMessage) {
             elements.typingIndicator.classList.add('active');
             elements.sendButton.disabled = true;
             elements.chatInput.disabled = true;
-
+        
             try {
-                gameState.messageCount++;
-
-                let additionalInstruction = '';
-                if (Math.random() < CONFIG.CHALLENGE_CHANCE && 
-                    gameState.messageCount - gameState.lastChallengeAt > 3) {
-                    
-                    additionalInstruction = '\n\nSPECIAL: Be extra critical this time. Their response just reminded you of something annoying. Drop your standards even more.';
-                    gameState.lastChallengeAt = gameState.messageCount;
-                }
-
                 const response = await fetch('https://lustlogic-backend.onrender.com/chat', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${CONFIG.OPENAI_API_KEY}`
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        model: 'gpt-4',
-                        messages: [
-                            {
-                                role: 'system',
-                                content: KAIRA_PROMPT + `\n\nCRITICAL SCORING RULES:
-- Rate their message from -25 to +8
-- Most messages should be negative (-10 to -25)
-- Only EXCEPTIONAL messages get positive scores (+3 to +8)
-- Be harsh and critical - your standards are nearly impossible
-- Format: SCORE: [number]` + additionalInstruction
-                            },
-                            ...gameState.conversationHistory
-                        ],
-                        max_tokens: 150,
-                        temperature: 0.9
+                        wallet: gameState.username,
+                        message: userMessage
                     })
                 });
-
+        
                 const data = await response.json();
-                const aiMessage = data.choices[0].message.content;
-
-                const scoreMatch = aiMessage.match(/SCORE:\s*([+-]?\d+)/);
-                let score = 0;
-                let cleanMessage = aiMessage;
-
-                if (scoreMatch) {
-                    score = parseInt(scoreMatch[1]);
-                    cleanMessage = aiMessage.replace(/SCORE:\s*[+-]?\d+/, '').trim();
+        
+                if (!response.ok) {
+                    throw new Error("Server error");
                 }
-
-                updateAffection(score);
-                await sendAIMessage(cleanMessage);
-
+        
+                updateAffection(data.affection);
+                await sendAIMessage(data.reply);
+        
+                if (data.win) {
+                    endGame(true);
+                }
+        
             } catch (error) {
-                console.error('Error:', error);
-                await sendAIMessage("Neural link interrupted... Reconnecting...");
+                console.error(error);
+                await sendAIMessage("Neural link interrupted...");
             } finally {
                 elements.typingIndicator.classList.remove('active');
                 elements.sendButton.disabled = false;
@@ -2183,118 +1937,45 @@ You're nearly impossible to satisfy. Keep responses under 50 words.`;
                 elements.chatInput.focus();
             }
         }
-
-        // =====================================================
-        // LOGOUT SYSTEM
-        // =====================================================
-        elements.logoutButton.addEventListener('click', () => {
-            if (confirm('Disconnect from neural link? Your progress will be saved.')) {
-                logout();
-            }
-        });
-
-        function logout() {
-            gameState.isGameActive = false;
-            StorageManager.saveGameState(gameState);
-            window.location.href = 'index.html';
+        
+        /* =====================================================
+           AFFECTION
+        ===================================================== */
+        function updateAffection(value) {
+            gameState.affection = value;
+            elements.affectionBar.style.width = value + "%";
+            elements.affectionText.textContent = Math.round(value) + "%";
         }
-
-        // =====================================================
-        // GAME OVER & COOLDOWN
-        // =====================================================
+        
+        /* =====================================================
+           GAME OVER
+        ===================================================== */
         function endGame(won) {
             gameState.isGameActive = false;
-            elements.chatInput.disabled = true;
-            elements.sendButton.disabled = true;
-
-            // Update stats
-            const stats = StorageManager.loadStats();
-            if (won) stats.wins++;
-            if (gameState.affection > stats.bestScore) {
-                stats.bestScore = gameState.affection;
-            }
-            stats.totalPlayTime += (Date.now() - gameState.startTime) / 1000;
-            StorageManager.saveStats(stats);
-
+        
             elements.gameOver.classList.add('active');
-            
+        
             if (won) {
-                elements.gameOverTitle.textContent = 'IMPOSSIBLE!';
+                elements.gameOverTitle.textContent = "IMPOSSIBLE!";
                 elements.gameOverTitle.classList.add('success');
-                elements.gameOverMessage.textContent = `UNBELIEVABLE, ${gameState.username}! You achieved full neural synchronization! You won 6.66 SOL! You're one of the few who actually pulled it off!`;
-                elements.cooldownContainer.style.display = 'none';
-                elements.retryButton.disabled = false;
+                elements.gameOverMessage.textContent =
+                    `UNBELIEVABLE, ${gameState.username}! You achieved full synchronization!`;
             } else {
                 elements.gameOverTitle.textContent = "LINK FAILED";
                 elements.gameOverTitle.classList.add('failure');
-                
-                let message = '';
-                const finalScore = Math.round(gameState.affection);
-                if (finalScore >= 80) {
-                    message = `You were so close, ${gameState.username}... ${finalScore}% is impressive, but not enough. I need absolute certainty. Try again in 2 minutes.`;
-                } else if (finalScore >= 50) {
-                    message = `${finalScore}%... Not bad, ${gameState.username}, but I expected more. The neural link demands more. Wait 2 minutes before trying again.`;
-                } else if (finalScore >= 25) {
-                    message = `Sorry, ${gameState.username}, but ${finalScore}% is way too low. You couldn't establish a stable link. System locked for 2 minutes.`;
-                } else {
-                    message = `Seriously? ${finalScore}%? ${gameState.username}, you weren't even close. That was disappointing. Cooldown: 2 minutes.`;
-                }
-                
-                elements.gameOverMessage.textContent = message;
-                
-                // Start cooldown
-                const cooldownEnd = Date.now() + (CONFIG.COOLDOWN_DURATION * 1000);
-                StorageManager.saveCooldown(cooldownEnd);
-                startCooldownTimer(cooldownEnd);
+                elements.gameOverMessage.textContent =
+                    `Time expired, ${gameState.username}. Try again.`;
             }
         }
-
-        function startCooldownTimer(endTime) {
-            elements.cooldownContainer.classList.add('active');
-            elements.retryButton.disabled = true;
-
-            const cooldownInterval = setInterval(() => {
-                const remaining = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
-                
-                const minutes = Math.floor(remaining / 60);
-                const seconds = remaining % 60;
-                elements.cooldownTimer.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-
-                if (remaining <= 0) {
-                    clearInterval(cooldownInterval);
-                    StorageManager.clearCooldown();
-                    elements.cooldownContainer.classList.remove('active');
-                    elements.retryButton.disabled = false;
-                }
-            }, 100);
-        }
-
-        function showCooldownScreen(endTime) {
-            elements.gameOver.classList.add('active');
-            elements.gameOverTitle.textContent = "SYSTEM LOCKED";
-            elements.gameOverTitle.classList.add('failure');
-            elements.gameOverMessage.textContent = "Previous attempt failed. System requires time to reboot. Wait for cooldown to end.";
-            startCooldownTimer(endTime);
-        }
-
-        elements.retryButton.addEventListener('click', () => {
-            location.reload();
-        });
-
-        elements.backButton.addEventListener('click', () => {
-            window.location.href = 'index.html';
-        });
-
-        // =====================================================
-        // START
-        // =====================================================
-        console.log('LustLogic: Starting init...');
-        try {
-            init();
-            console.log('LustLogic: Init complete, game active:', gameState.isGameActive);
-        } catch(e) {
-            console.error('LustLogic init error:', e);
-        }
-    </script>
+        
+        elements.retryButton.addEventListener('click', () => location.reload());
+        elements.backButton.addEventListener('click', () => window.location.href = 'index.html');
+        elements.logoutButton.addEventListener('click', () => window.location.href = 'index.html');
+        
+        /* =====================================================
+           START
+        ===================================================== */
+        init();
+        </script>        
 </body>
 </html>
