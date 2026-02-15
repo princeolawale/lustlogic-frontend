@@ -243,6 +243,15 @@
                 margin: 2px 0;
             }
         }
+.token-section { margin-top:40px; display:flex; flex-direction:column; gap:15px; align-items:center; }
+.token-title { font-size:14px; letter-spacing:4px; color:rgba(255,255,255,0.6); }
+.token-ca { display:flex; gap:10px; align-items:center; background:rgba(255,255,255,0.05); padding:12px 16px; border:1px solid rgba(255,20,97,0.4); }
+.token-ca span { font-size:13px; letter-spacing:2px; color:#ff6b9d; }
+.token-ca button { background:#ff1461; border:none; padding:6px 12px; cursor:pointer; font-size:11px; letter-spacing:2px; color:white; }
+.token-ca button:hover { opacity:0.8; }
+.x-link { text-decoration:none; font-size:14px; letter-spacing:3px; color:#1DA1F2; transition:0.3s; }
+.x-link:hover { opacity:0.7; }
+
     </style>
 </head>
 <body>
@@ -260,6 +269,16 @@
         <div class="login-container">
             <button class="login-btn wallet-login" onclick="handleWalletLogin()">
                 <span>Connect Phantom</span>
+
+<div class="token-section">
+    <div class="token-title">TOKEN</div>
+    <div class="token-ca">
+        <span id="tokenCA">COMING_SOON_CA_ADDRESS</span>
+        <button id="copyCA">COPY</button>
+    </div>
+    <a href="https://x.com/YOUR_X_ACCOUNT" target="_blank" class="x-link">Follow on X</a>
+</div>
+
             </button>
         </div>
     </div>
@@ -292,5 +311,19 @@
             }
         }
     </script>
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+  const copyBtn = document.getElementById("copyCA");
+  if(copyBtn){
+    copyBtn.addEventListener("click", function(){
+      const text = document.getElementById("tokenCA").innerText;
+      navigator.clipboard.writeText(text);
+      this.innerText = "COPIED";
+      setTimeout(() => this.innerText = "COPY", 1500);
+    });
+  }
+});
+</script>
+
 </body>
 </html>
