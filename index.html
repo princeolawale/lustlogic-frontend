@@ -390,5 +390,85 @@ document.addEventListener("DOMContentLoaded", function(){
 });
 </script>
 
+
+<!-- Bottom Section -->
+<div class="bottom-section">
+    <div class="ca-box">
+        <span class="copy-icon" id="copyIcon">📋</span>
+        <span id="tokenCA">COMING SOON</span>
+    </div>
+
+    <a href="https://x.com/youractualhandle" target="_blank" class="x-btn">
+        FOLLOW ON X
+    </a>
+</div>
+
+<style>
+.bottom-section {
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+    align-items: center;
+}
+
+.ca-box {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px 50px;
+    border: 2px solid #ff1461;
+    background: rgba(255,20,97,0.08);
+    font-size: 18px;
+    letter-spacing: 4px;
+    color: #ff6b9d;
+}
+
+.copy-icon {
+    cursor: pointer;
+    font-size: 22px;
+    transition: 0.2s ease;
+}
+
+.copy-icon:hover {
+    transform: scale(1.2);
+}
+
+.x-btn {
+    padding: 22px 70px;
+    font-size: 22px;
+    letter-spacing: 4px;
+    text-decoration: none;
+    background: #1DA1F2;
+    color: white;
+    font-weight: bold;
+    transition: 0.3s ease;
+}
+
+.x-btn:hover {
+    opacity: 0.85;
+}
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+
+    const copyIcon = document.getElementById("copyIcon");
+
+    if(copyIcon){
+        copyIcon.addEventListener("click", function(){
+            const text = document.getElementById("tokenCA").innerText;
+            navigator.clipboard.writeText(text);
+            copyIcon.innerText = "✔";
+            setTimeout(()=> copyIcon.innerText="📋",1500);
+        });
+    }
+
+});
+</script>
+
 </body>
 </html>
